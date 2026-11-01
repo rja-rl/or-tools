@@ -13,6 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 # Building using the github runner environement directly.
+env:
+  # Wheel version is 9.15.<OR_TOOLS_PATCH> (see set_version() in cmake/utils.cmake)
+  OR_TOOLS_PATCH: 6756
+
 jobs:
   native:
     strategy:
@@ -27,10 +31,13 @@ jobs:
           #{version: "3.12", dir: Python312},
           {version: "3.13", dir: Python313},
           {version: "3.14", dir: Python314},
+          {version: "3.15", dir: Python315},
         ]
       fail-fast: false
     name: amd64•Windows•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
-    runs-on: windows-latest
+    # windows-latest only ships Visual Studio 2026, whose MSVC fails to compile
+    # ortools/math_opt/elemental/python/elemental.cc
+    runs-on: windows-2022
     env:
       deps_src_key: amd64_windows_python_deps_src
       deps_build_key: amd64_windows_python_deps_build_${{matrix.cmake.config}}
@@ -78,6 +85,12 @@ jobs:
           --config ${{matrix.cmake.config}}
           --target ALL_BUILD
           -v -j2
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-amd64-windows-python${{matrix.python.version}}
+          path: build/python/dist/*.whl
+          if-no-files-found: error
       - name: Test
         run: >
           cmake --build build

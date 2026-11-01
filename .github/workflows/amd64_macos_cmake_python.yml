@@ -16,13 +16,14 @@ concurrency:
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache
+  # Wheel version is 9.15.<OR_TOOLS_PATCH> (see set_version() in cmake/utils.cmake)
+  OR_TOOLS_PATCH: 6756
 
 jobs:
   native:
     strategy:
       matrix:
         cmake: [
-          {name: "Xcode", generator: "Xcode", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: install},
           {name: "Make", generator: "Unix Makefiles", config: Release, build_target: all, test_target: test, install_target: install},
         ]
         python: [
@@ -32,6 +33,7 @@ jobs:
           #{version: "3.12"},
           {version: "3.13"},
           {version: "3.14"},
+          {version: "3.15"},
         ]
       fail-fast: false
     name: amd64•MacOS•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
@@ -43,9 +45,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install Dependencies
+        # can't use brew swig (4.5): it no longer defines PyInt_AsLong used by
+        # ortools/base/python-swig.h, and 4.4 Director python support is broken on macos
+        # see: https://github.com/swig/swig/issues/3279
         run: |
-          brew install ccache swig
-          swig -version
+          brew install ccache
+          curl -fsSL -o swig-4.3.1.tar.gz https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
+          cd swig-4.3.1 && ./configure --prefix=$HOME/.local --without-pcre && make -j 4 && make install
+          cd .. && rm -rf swig-4.3.1
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/swig -version
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -94,6 +103,12 @@ jobs:
           --config ${{matrix.cmake.config}}
           --target ${{matrix.cmake.build_target}}
           -v -j2
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-amd64-macos-python${{matrix.python.version}}
+          path: build/python/dist/*.whl
+          if-no-files-found: error
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1

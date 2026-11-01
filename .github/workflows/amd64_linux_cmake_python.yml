@@ -16,6 +16,8 @@ concurrency:
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache
+  # Wheel version is 9.15.<OR_TOOLS_PATCH> (see set_version() in cmake/utils.cmake)
+  OR_TOOLS_PATCH: 6756
 
 jobs:
   native:
@@ -28,10 +30,12 @@ jobs:
           #{version: "3.12"},
           {version: "3.13"},
           {version: "3.14"},
+          {version: "3.15"},
          ]
       fail-fast: false
     name: amd64•Linux•CMake•Python${{matrix.python.version}}
-    runs-on: ubuntu-latest
+    # SCIP v10.0.0 (tinycthread) fails to compile against ubuntu-latest (26.04) system headers
+    runs-on: ubuntu-24.04
     env:
       deps_src_key: amd64_linux_python_deps_src_${{matrix.python.version}}
       deps_build_key: amd64_linux_python_deps_build_${{matrix.python.version}}
@@ -89,6 +93,12 @@ jobs:
           --config Release
           --target all
           -v -j2
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-amd64-linux-python${{matrix.python.version}}
+          path: build/python/dist/*.whl
+          if-no-files-found: error
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
