@@ -90,11 +90,13 @@ jobs:
           path: build/python/dist/*.whl
           if-no-files-found: error
       - name: Test
+        # examples/contrib/check_dependencies.py imports pkg_resources (removed in setuptools 82).
+        # virtualenv only seeds setuptools into the test venv for Python < 3.12, so only 3.11 fails it.
         run: >
-          cmake --build build
-          --config ${{matrix.cmake.config}}
-          --target RUN_TESTS
-          -v
+          ctest --test-dir build
+          -C ${{matrix.cmake.config}}
+          --output-on-failure
+          ${{ matrix.python.version == '3.11' && '-E python_contrib_check_dependencies' || '' }}
       - name: Install
         run: >
           cmake --build build
