@@ -275,6 +275,8 @@ set(PYTHON_PROJECT ${PROJECT_NAME})
 set(PYTHON_PACKAGE_NAME "ortools-riv" CACHE STRING "PyPI package name")
 message(STATUS "Python project: ${PYTHON_PROJECT}")
 message(STATUS "Python package (PyPI) name: ${PYTHON_PACKAGE_NAME}")
+# setuptools normalizes "-" to "_" when naming the .egg-info directory
+string(REPLACE "-" "_" PYTHON_PACKAGE_EGG_NAME ${PYTHON_PACKAGE_NAME})
 set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
@@ -804,7 +806,7 @@ add_custom_command(
     $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub_timestamp>
   BYPRODUCTS
     python/${PYTHON_PROJECT}
-    python/${PYTHON_PROJECT}.egg-info
+    python/${PYTHON_PACKAGE_EGG_NAME}.egg-info
     python/build
     python/dist
   WORKING_DIRECTORY python
@@ -835,13 +837,13 @@ if(BUILD_VENV)
     # Must NOT call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install
-      --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PROJECT}==${PROJECT_VERSION}${PYTHON_RELEASE}
+      --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PACKAGE_NAME}==${PROJECT_VERSION}${PYTHON_RELEASE}
     # install modules only required to run examples
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install
       pandas matplotlib pytest scipy svgwrite
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Create venv and install ${PYTHON_PROJECT}"
+    COMMENT "Create venv and install ${PYTHON_PACKAGE_NAME}"
     VERBATIM)
 endif()
 
