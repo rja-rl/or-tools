@@ -272,7 +272,9 @@ endfunction()
 list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 set(PYTHON_PROJECT ${PROJECT_NAME})
+set(PYTHON_PACKAGE_NAME "ortools-riv" CACHE STRING "PyPI package name")
 message(STATUS "Python project: ${PYTHON_PROJECT}")
+message(STATUS "Python package (PyPI) name: ${PYTHON_PACKAGE_NAME}")
 set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 

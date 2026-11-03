@@ -38,7 +38,7 @@ def read(fname):
 
 
 setup(
-    name='@PYTHON_PROJECT@',
+    name='@PYTHON_PACKAGE_NAME@',
     version='@PROJECT_VERSION@@PYTHON_RELEASE@',
     packages=find_packages(),
     python_requires='>= 3.9',
